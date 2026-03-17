@@ -19,7 +19,6 @@ import com.example.rickandmortyapp.ui.screens.character_list.CharacterListViewMo
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
-
     val repository = CharacterRepositoryImpl(RetrofitInstance.api)
 
     NavHost(

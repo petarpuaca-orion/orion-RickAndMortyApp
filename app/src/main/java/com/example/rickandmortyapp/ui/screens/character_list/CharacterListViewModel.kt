@@ -3,7 +3,6 @@ package com.example.rickandmortyapp.ui.screens.character_list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rickandmortyapp.domain.repository.CharacterRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,11 +22,8 @@ class CharacterListViewModel(
     fun loadCharacters() {
         viewModelScope.launch {
             _uiState.value = CharacterListUiState(isLoading = true)
-
             try {
-                delay(2000)
                 val characters = repository.getCharacters()
-//                throw Exception("Test error while loading characters")
                 _uiState.value = CharacterListUiState(
                     isLoading = false,
                     characters = characters
@@ -35,7 +31,7 @@ class CharacterListViewModel(
             } catch (e: Exception) {
                 _uiState.value = CharacterListUiState(
                     isLoading = false,
-                    errorMessage = e.message ?: "An unexpected error occurred"
+                    errorMessage = e.message
                 )
             }
         }

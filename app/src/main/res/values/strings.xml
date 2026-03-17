@@ -9,6 +9,6 @@
     <string name="status_label">Status: %1$s</string>
     <string name="species_label">Species: %1$s</string>
     <string name="gender_label">Gender: %1$s</string>
-
     <string name="back_content_description">Go back</string>
+
 </resources>

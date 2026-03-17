@@ -167,7 +167,6 @@ fun DetailContent(
         )
     }
 }
-//deo za prikaz
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun DetailContentPreview() {

@@ -116,7 +116,6 @@ fun CharacterListContent(
         }
     }
 }
-//deo za prikaz
 @Preview(showBackground = true)
 @Composable
 fun LoadingContentPreview() {

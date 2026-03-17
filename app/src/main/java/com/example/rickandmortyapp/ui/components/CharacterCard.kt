@@ -54,7 +54,6 @@ fun CharacterCard(
         }
     }
 }
-//deo za prikaz
 @Preview(showBackground = true)
 @Composable
 fun CharacterCardPreview() {
