@@ -25,6 +25,7 @@ fun AppNavGraph() {
         navController = navController,
         startDestination = AppDestinations.CHARACTER_LIST_ROUTE
     ) {
+
         composable(AppDestinations.CHARACTER_LIST_ROUTE) {
             val listViewModel: CharacterListViewModel = viewModel(
                 factory = CharacterListViewModelFactory(repository)
