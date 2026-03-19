@@ -3,26 +3,33 @@ package com.example.rickandmortyapp.ui.screens.character_list
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.rickandmortyapp.R
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.ui.components.CharacterCard
-import androidx.compose.material3.Scaffold
-import androidx.compose.ui.res.stringResource
-import com.example.rickandmortyapp.R
-import androidx.compose.ui.tooling.preview.Preview
 import com.example.rickandmortyapp.ui.theme.RickAndMortyAppTheme
 
 @Composable
@@ -31,36 +38,88 @@ fun CharacterListScreen(
     onCharacterClick: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    CharacterListPaginationEffect(
+        listState = listState,
+        uiState = uiState,
+        onLoadMore = { viewModel.loadMoreCharacters() }
+    )
 
     Scaffold { innerPadding ->
-        when {
-            uiState.isLoading -> {
-                LoadingContent(
-                    modifier = Modifier.padding(innerPadding)
-                )
-            }
+        CharacterListScreenContent(
+            uiState = uiState,
+            listState = listState,
+            onRetry = { viewModel.loadInitialCharacters() },
+            onCharacterClick = onCharacterClick,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
+}
 
-            uiState.errorMessage != null -> {
-                ErrorContent(
-                    message = uiState.errorMessage,
-                    onRetry = { viewModel.loadCharacters() },
-                    modifier = Modifier.padding(innerPadding)
-                )
-            }
+@Composable
+fun CharacterListScreenContent(
+    uiState: CharacterListUiState,
+    listState: LazyListState,
+    onRetry: () -> Unit,
+    onCharacterClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when {
+        uiState.isInitialLoading && uiState.characters.isEmpty() -> {
+            LoadingContent(modifier = modifier)
+        }
 
-            else -> {
-                CharacterListContent(
-                    characters = uiState.characters,
-                    onCharacterClick = onCharacterClick,
-                    modifier = Modifier.padding(innerPadding)
-                )
+        uiState.errorMessage != null && uiState.characters.isEmpty() -> {
+            ErrorContent(
+                message = uiState.errorMessage,
+                onRetry = onRetry,
+                modifier = modifier
+            )
+        }
+
+        else -> {
+            CharacterListContent(
+                characters = uiState.characters,
+                listState = listState,
+                isLoadingMore = uiState.isLoadingMore,
+                onCharacterClick = onCharacterClick,
+                modifier = modifier
+            )
+        }
+    }
+}
+
+@Composable
+fun CharacterListPaginationEffect(
+    listState: LazyListState,
+    uiState: CharacterListUiState,
+    onLoadMore: () -> Unit
+) {
+    LaunchedEffect(listState, uiState.characters.size, uiState.endReached) {
+        snapshotFlow {
+            val layoutInfo = listState.layoutInfo
+            val totalItemsCount = layoutInfo.totalItemsCount
+            val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+
+            totalItemsCount > 0 && lastVisibleItemIndex >= totalItemsCount - 3
+        }.collect { shouldLoadMore ->
+            if (
+                shouldLoadMore &&
+                !uiState.isInitialLoading &&
+                !uiState.isLoadingMore &&
+                !uiState.endReached
+            ) {
+                onLoadMore()
             }
         }
     }
 }
 
 @Composable
-fun LoadingContent(modifier: Modifier= Modifier) {
+fun LoadingContent(
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -72,8 +131,8 @@ fun LoadingContent(modifier: Modifier= Modifier) {
 @Composable
 fun ErrorContent(
     message: String?,
-    modifier: Modifier= Modifier,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
@@ -87,10 +146,9 @@ fun ErrorContent(
             style = MaterialTheme.typography.bodyLarge
         )
 
-        Button(
-            onClick = onRetry,
-            modifier = modifier.padding(top = 16.dp)
-        ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = onRetry) {
             Text(text = stringResource(R.string.retry))
         }
     }
@@ -99,23 +157,48 @@ fun ErrorContent(
 @Composable
 fun CharacterListContent(
     characters: List<CharacterModel>,
-    modifier: Modifier= Modifier,
-    onCharacterClick: (Int) -> Unit
+    listState: LazyListState,
+    isLoadingMore: Boolean,
+    onCharacterClick: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
+        state = listState,
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(characters) { character ->
+        items(
+            items = characters,
+            key = { character -> character.id }
+        ) { character ->
             CharacterCard(
                 character = character,
                 onClick = { onCharacterClick(character.id) }
             )
         }
+
+        if (isLoadingMore) {
+            item {
+                LoadingMoreItem()
+            }
+        }
     }
 }
+
+@Composable
+fun LoadingMoreItem() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun LoadingContentPreview() {
@@ -158,6 +241,8 @@ fun CharacterListContentPreview() {
                     image = "https://rickandmortyapi.com/api/character/avatar/2.jpeg"
                 )
             ),
+            listState = rememberLazyListState(),
+            isLoadingMore = true,
             onCharacterClick = {}
         )
     }

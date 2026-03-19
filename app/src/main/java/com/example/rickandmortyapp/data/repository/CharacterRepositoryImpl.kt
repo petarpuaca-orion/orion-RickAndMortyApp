@@ -2,19 +2,59 @@ package com.example.rickandmortyapp.data.repository
 
 import com.example.rickandmortyapp.data.mapper.toDomain
 import com.example.rickandmortyapp.data.remote.RickAndMortyApiService
-import com.example.rickandmortyapp.domain.repository.CharacterRepository
 import com.example.rickandmortyapp.domain.model.CharacterModel
+import com.example.rickandmortyapp.domain.model.CharacterPageResult
+import com.example.rickandmortyapp.domain.repository.CharacterRepository
+
 class CharacterRepositoryImpl(
     private val apiService: RickAndMortyApiService
 ) : CharacterRepository {
 
-    override suspend fun getCharacters(): List<CharacterModel> {
-        return apiService.getCharacters().results.map { characterDto ->
-            characterDto.toDomain()
+    private val cachedPages = mutableMapOf<Int, CharacterPageResult>()
+    private val cachedCharactersById = mutableMapOf<Int, CharacterModel>()
+
+    override suspend fun getCharactersPage(page: Int): CharacterPageResult {
+        cachedPages[page]?.let { cachedPage ->
+            return cachedPage
         }
+
+        val response = apiService.getCharacters(page)
+
+        val characters = response.results.map { dto ->
+            dto.toDomain()
+        }
+
+        characters.forEach { character ->
+            cachedCharactersById[character.id] = character
+        }
+
+        val result = CharacterPageResult(
+            characters = characters,
+            nextPage = extractNextPage(response.info.next),
+            isLastPage = response.info.next == null
+        )
+
+        cachedPages[page] = result
+        return result
     }
 
     override suspend fun getCharacterById(id: Int): CharacterModel {
-        return apiService.getCharacterById(id).toDomain()
+        cachedCharactersById[id]?.let { cachedCharacter ->
+            return cachedCharacter
+        }
+
+        val dto = apiService.getCharacterById(id)
+
+        val character = dto.toDomain()
+
+        cachedCharactersById[id] = character
+        return character
+    }
+
+    private fun extractNextPage(nextUrl: String?): Int? {
+        return nextUrl
+            ?.substringAfter("page=", "")
+            ?.substringBefore("&")
+            ?.toIntOrNull()
     }
 }
