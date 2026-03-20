@@ -1,5 +1,8 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,17 +27,18 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.rickandmortyapp.R
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.ui.components.CharacterCard
-import com.example.rickandmortyapp.ui.theme.RickAndMortyAppTheme
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterListScreen(
     viewModel: CharacterListViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onCharacterClick: (Int) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -51,16 +55,21 @@ fun CharacterListScreen(
             uiState = uiState,
             listState = listState,
             onRetry = { viewModel.loadInitialCharacters() },
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
             onCharacterClick = onCharacterClick,
             modifier = Modifier.padding(innerPadding)
         )
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterListScreenContent(
     uiState: CharacterListUiState,
     listState: LazyListState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onRetry: () -> Unit,
     onCharacterClick: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -84,6 +93,8 @@ fun CharacterListScreenContent(
                 listState = listState,
                 isLoadingMore = uiState.isLoadingMore,
                 onCharacterClick = onCharacterClick,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 modifier = modifier
             )
         }
@@ -155,9 +166,12 @@ fun ErrorContent(
 }
 
 @Composable
+@OptIn(ExperimentalSharedTransitionApi::class)
 fun CharacterListContent(
     characters: List<CharacterModel>,
     listState: LazyListState,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     isLoadingMore: Boolean,
     onCharacterClick: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -175,6 +189,8 @@ fun CharacterListContent(
         ) { character ->
             CharacterCard(
                 character = character,
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
                 onClick = { onCharacterClick(character.id) }
             )
         }
@@ -196,54 +212,5 @@ fun LoadingMoreItem() {
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun LoadingContentPreview() {
-    RickAndMortyAppTheme {
-        LoadingContent()
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ErrorContentPreview() {
-    RickAndMortyAppTheme {
-        ErrorContent(
-            message = "Test error message",
-            onRetry = {}
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun CharacterListContentPreview() {
-    RickAndMortyAppTheme {
-        CharacterListContent(
-            characters = listOf(
-                CharacterModel(
-                    id = 1,
-                    name = "Rick Sanchez",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
-                ),
-                CharacterModel(
-                    id = 2,
-                    name = "Morty Smith",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://rickandmortyapi.com/api/character/avatar/2.jpeg"
-                )
-            ),
-            listState = rememberLazyListState(),
-            isLoadingMore = true,
-            onCharacterClick = {}
-        )
     }
 }

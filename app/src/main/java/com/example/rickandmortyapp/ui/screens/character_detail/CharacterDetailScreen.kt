@@ -1,6 +1,12 @@
 package com.example.rickandmortyapp.ui.screens.character_detail
 
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,34 +17,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.example.rickandmortyapp.domain.model.CharacterModel
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import coil.request.ImageRequest
 import com.example.rickandmortyapp.R
+import com.example.rickandmortyapp.domain.model.CharacterModel
+import com.example.rickandmortyapp.ui.navigation.CharacterSharedTransitionKeys
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun CharacterDetailScreen(
     viewModel: CharacterDetailViewModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,6 +89,8 @@ fun CharacterDetailScreen(
             character != null -> {
                 DetailContent(
                     character = character,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
                     modifier = Modifier.padding(innerPadding)
                 )
             }
@@ -87,7 +99,7 @@ fun CharacterDetailScreen(
 }
 
 @Composable
-fun DetailLoadingContent(modifier: Modifier= Modifier) {
+fun DetailLoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -99,7 +111,7 @@ fun DetailLoadingContent(modifier: Modifier= Modifier) {
 @Composable
 fun DetailErrorContent(
     message: String?,
-    modifier: Modifier= Modifier,
+    modifier: Modifier = Modifier,
     onRetry: () -> Unit
 ) {
     Column(
@@ -124,10 +136,15 @@ fun DetailErrorContent(
 }
 
 @Composable
+@OptIn(ExperimentalSharedTransitionApi::class)
 fun DetailContent(
     character: CharacterModel,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val imageKey = CharacterSharedTransitionKeys.imageKey(character.id)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -137,68 +154,56 @@ fun DetailContent(
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        AsyncImage(
-            model = character.image,
-            contentDescription = character.name,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-        )
-
-        Text(
-            text = character.name,
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Text(
-            text = stringResource(R.string.status_label, character.status),
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Text(
-            text = stringResource(R.string.species_label, character.species),
-            style = MaterialTheme.typography.bodyLarge
-        )
-
-        Text(
-            text = stringResource(R.string.gender_label, character.gender),
-            style = MaterialTheme.typography.bodyLarge
-        )
-    }
-}
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun DetailContentPreview() {
-    MaterialTheme {
-        DetailContent(
-            character = CharacterModel(
-                id = 4,
-                name = "Beth Smith",
-                status = "Alive",
-                species = "Human",
-                gender = "Female",
-                image = "https://rickandmortyapi.com/api/character/avatar/4.jpeg"
+        with(sharedTransitionScope) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(character.image)
+                    .memoryCacheKey(imageKey)
+                    .placeholderMemoryCacheKey(imageKey)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = character.name,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier
+                    .sharedElement(
+                        state = rememberSharedContentState(key = imageKey),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ ->
+                            tween(durationMillis = 700)
+                        }
+                    )
+                    .fillMaxWidth()
+                    .height(300.dp)
             )
-        )
-    }
-}
+        }
 
-@Preview(showBackground = true)
-@Composable
-fun DetailLoadingContentPreview() {
-    MaterialTheme {
-        DetailLoadingContent()
-    }
-}
+        with(animatedVisibilityScope) {
+            Column(
+                modifier = Modifier.animateEnterExit(
+                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = character.name,
+                    style = MaterialTheme.typography.headlineMedium
+                )
 
-@Preview(showBackground = true)
-@Composable
-fun DetailErrorContentPreview() {
-    MaterialTheme {
-        DetailErrorContent(
-            message = "Failed to load character.",
-            onRetry = {}
-        )
+                Text(
+                    text = stringResource(R.string.status_label, character.status),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Text(
+                    text = stringResource(R.string.species_label, character.species),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+
+                Text(
+                    text = stringResource(R.string.gender_label, character.gender),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
     }
 }
