@@ -1,9 +1,11 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.domain.repository.CharacterRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,6 +71,54 @@ class CharacterListViewModel(
         }
     }
 
+    fun refreshCharacters() {
+        if (requestInProgress) return
+
+        viewModelScope.launch {
+            requestInProgress = true
+            val refreshStartTime = SystemClock.elapsedRealtime()
+            val minimumRefreshDuration = 500L
+            _uiState.update {
+                it.copy(
+                    isRefreshing = true,
+                    isInitialLoading = false,
+                    isLoadingMore = false,
+                    errorMessage = null
+                )
+            }
+
+            try {
+                visibleCharacters.clear()
+                bufferedCharacters.clear()
+                nextPage = 1
+                lastPageReached = false
+
+                val elapsed = SystemClock.elapsedRealtime() - refreshStartTime
+                val remainingTime = minimumRefreshDuration - elapsed
+                if (remainingTime > 0) {
+                    delay(remainingTime)
+                }
+                val result = repository.getCharactersPage(page = 1)
+
+                visibleCharacters.addAll(result.characters)
+                nextPage = result.nextPage
+                lastPageReached = result.isLastPage
+
+                publishState()
+            } catch (_: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        isLoadingMore = false,
+                        errorMessage = "Failed to refresh characters."
+                    )
+                }
+            } finally {
+                requestInProgress = false
+            }
+        }
+    }
+
     fun loadMoreCharacters() {
         if (requestInProgress) return
         if (lastPageReached && bufferedCharacters.isEmpty()) return
@@ -100,6 +150,7 @@ class CharacterListViewModel(
         }
     }
 
+
     private suspend fun appendNextChunk() {
         if (bufferedCharacters.size < 10 && !lastPageReached) {
             val pageToLoad = nextPage ?: return
@@ -125,7 +176,9 @@ class CharacterListViewModel(
             isInitialLoading = false,
             isLoadingMore = false,
             errorMessage = null,
-            endReached = lastPageReached && bufferedCharacters.isEmpty()
+            endReached = lastPageReached && bufferedCharacters.isEmpty(),
+            isRefreshing = false
+
         )
     }
 }

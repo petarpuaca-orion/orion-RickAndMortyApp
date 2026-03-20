@@ -17,9 +17,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,7 +35,7 @@ import com.example.rickandmortyapp.R
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.ui.components.CharacterCard
 
-@OptIn(ExperimentalSharedTransitionApi::class)
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterListScreen(
     viewModel: CharacterListViewModel,
@@ -51,15 +53,26 @@ fun CharacterListScreen(
     )
 
     Scaffold { innerPadding ->
-        CharacterListScreenContent(
-            uiState = uiState,
-            listState = listState,
-            onRetry = { viewModel.loadInitialCharacters() },
-            sharedTransitionScope = sharedTransitionScope,
-            animatedVisibilityScope = animatedVisibilityScope,
-            onCharacterClick = onCharacterClick,
-            modifier = Modifier.padding(innerPadding)
-        )
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = {
+                println("UI: onRefreshTriggered")
+                viewModel.refreshCharacters()
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            CharacterListScreenContent(
+                uiState = uiState,
+                listState = listState,
+                onRetry = { viewModel.loadInitialCharacters() },
+                sharedTransitionScope = sharedTransitionScope,
+                animatedVisibilityScope = animatedVisibilityScope,
+                onCharacterClick = onCharacterClick,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }
 
@@ -118,6 +131,7 @@ fun CharacterListPaginationEffect(
             if (
                 shouldLoadMore &&
                 !uiState.isInitialLoading &&
+                !uiState.isRefreshing &&
                 !uiState.isLoadingMore &&
                 !uiState.endReached
             ) {
