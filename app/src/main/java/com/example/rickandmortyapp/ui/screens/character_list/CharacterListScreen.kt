@@ -1,7 +1,10 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +32,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.rickandmortyapp.R
@@ -56,7 +60,7 @@ fun CharacterListScreen(
         PullToRefreshBox(
             isRefreshing = uiState.isRefreshing,
             onRefresh = {
-                println("UI: onRefreshTriggered")
+                Log.d("UI", "onRefreshTriggered")
                 viewModel.refreshCharacters()
             },
             modifier = Modifier
@@ -226,5 +230,166 @@ fun LoadingMoreItem() {
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator()
+    }
+}
+
+private fun previewCharacters() = listOf(
+    CharacterModel(
+        id = 1,
+        name = "Rick Sanchez",
+        status = "Alive",
+        species = "Human",
+        gender = "Male",
+        image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
+    ),
+    CharacterModel(
+        id = 2,
+        name = "Morty Smith",
+        status = "Alive",
+        species = "Human",
+        gender = "Male",
+        image = "https://rickandmortyapi.com/api/character/avatar/2.jpeg"
+    ),
+    CharacterModel(
+        id = 3,
+        name = "Summer Smith",
+        status = "Alive",
+        species = "Human",
+        gender = "Male",
+        image = "https://rickandmortyapi.com/api/character/avatar/3.jpeg"
+    )
+)
+
+@Preview(showBackground = true)
+@Composable
+fun LoadingContentPreview() {
+    LoadingContent()
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ErrorContentPreview() {
+    ErrorContent(
+        message = "Failed to load characters.",
+        onRetry = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ErrorContentWithDefaultMessagePreview() {
+    ErrorContent(
+        message = null,
+        onRetry = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LoadingMoreItemPreview() {
+    LoadingMoreItem()
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterListContentPreview() {
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            CharacterListContent(
+                characters = previewCharacters(),
+                listState = rememberLazyListState(),
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this,
+                isLoadingMore = false,
+                onCharacterClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterListContentLoadingMorePreview() {
+    SharedTransitionLayout {
+
+        AnimatedVisibility(visible = true) {
+            CharacterListContent(
+                characters = previewCharacters(),
+                listState = rememberLazyListState(),
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this,
+                isLoadingMore = false,
+                onCharacterClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterListScreenContentLoadingPreview() {
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            CharacterListScreenContent(
+                uiState = CharacterListUiState(
+                    isInitialLoading = true,
+                    characters = emptyList()
+                ),
+                listState = rememberLazyListState(),
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this,
+                onRetry = {},
+                onCharacterClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterListScreenContentErrorPreview() {
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            CharacterListScreenContent(
+                uiState = CharacterListUiState(
+                    isInitialLoading = false,
+                    characters = emptyList(),
+                    errorMessage = "Something went wrong."
+                ),
+                listState = rememberLazyListState(),
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this,
+                onRetry = {},
+                onCharacterClick = {}
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterListScreenContentSuccessPreview() {
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            CharacterListScreenContent(
+                uiState = CharacterListUiState(
+                    isInitialLoading = false,
+                    characters = previewCharacters(),
+                    isLoadingMore = false,
+                    endReached = false,
+                    errorMessage = null
+                ),
+                listState = rememberLazyListState(),
+                sharedTransitionScope = this@SharedTransitionLayout,
+                animatedVisibilityScope = this,
+                onRetry = {},
+                onCharacterClick = {}
+            )
+        }
     }
 }

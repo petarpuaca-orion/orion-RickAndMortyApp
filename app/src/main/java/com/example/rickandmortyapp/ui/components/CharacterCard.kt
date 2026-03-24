@@ -1,7 +1,9 @@
 package com.example.rickandmortyapp.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -19,11 +21,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.ui.navigation.CharacterSharedTransitionKeys
+import com.example.rickandmortyapp.ui.theme.RickAndMortyAppTheme
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -79,20 +83,27 @@ fun CharacterCard(
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun CharacterCardPreview() {
-//    RickAndMortyAppTheme {
-//        CharacterCard(
-//            character = CharacterModel(
-//                id = 1,
-//                name = "Rick Sanchez",
-//                status = "Alive",
-//                species = "Human",
-//                gender = "Male",
-//                image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
-//            ),
-//            onClick = {}
-//        )
-//    }
-//}
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview(showBackground = true)
+@Composable
+fun CharacterCardPreview() {
+    RickAndMortyAppTheme {
+        SharedTransitionLayout {
+            AnimatedVisibility(visible = true) {
+                CharacterCard(
+                    character = CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
+                    ),
+                    sharedTransitionScope = this@SharedTransitionLayout,
+                    animatedVisibilityScope = this,
+                    onClick = {}
+                )
+            }
+        }
+    }
+}
