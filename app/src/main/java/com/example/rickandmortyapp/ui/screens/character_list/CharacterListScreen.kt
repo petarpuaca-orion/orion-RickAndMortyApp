@@ -1,5 +1,9 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -28,17 +32,23 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.rickandmortyapp.R
+import com.example.rickandmortyapp.core.notifications.CharacterNotificationEvent
+import com.example.rickandmortyapp.core.notifications.CharacterNotificationHelper
 import com.example.rickandmortyapp.domain.model.CharacterModel
 import com.example.rickandmortyapp.ui.components.CharacterCard
 
+@SuppressLint("MissingPermission")
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun CharacterListScreen(
@@ -49,6 +59,32 @@ fun CharacterListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+    val notificationHelper = remember(context) {
+        CharacterNotificationHelper(context)
+    }
+    LaunchedEffect(viewModel, notificationHelper) {
+        viewModel.notificationEvent.collect { event ->
+            val hasNotificationPermission =
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                        ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.POST_NOTIFICATIONS
+                        ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasNotificationPermission) return@collect
+
+            when (event) {
+                CharacterNotificationEvent.ShowSuccess -> {
+                    notificationHelper.showSuccessNotification()
+                }
+
+                CharacterNotificationEvent.ShowError -> {
+                    notificationHelper.showErrorNotification()
+                }
+            }
+        }
+    }
 
     CharacterListPaginationEffect(
         listState = listState,
