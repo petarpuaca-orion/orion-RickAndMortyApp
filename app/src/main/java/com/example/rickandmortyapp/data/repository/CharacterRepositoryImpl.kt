@@ -1,60 +1,62 @@
 package com.example.rickandmortyapp.data.repository
 
+import com.example.rickandmortyapp.data.local.dao.CharacterDao
 import com.example.rickandmortyapp.data.mapper.toDomain
+import com.example.rickandmortyapp.data.mapper.toEntity
 import com.example.rickandmortyapp.data.remote.RickAndMortyApiService
 import com.example.rickandmortyapp.domain.model.CharacterModel
-import com.example.rickandmortyapp.domain.model.CharacterPageResult
+import com.example.rickandmortyapp.domain.model.CharactersRefreshResult
 import com.example.rickandmortyapp.domain.repository.CharacterRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class CharacterRepositoryImpl(
-    private val apiService: RickAndMortyApiService
+    private val apiService: RickAndMortyApiService,
+    private val characterDao: CharacterDao
 ) : CharacterRepository {
 
-    private val cachedPages = mutableMapOf<Int, CharacterPageResult>()
-    private val cachedCharactersById = mutableMapOf<Int, CharacterModel>()
-
-    override suspend fun getCharactersPage(page: Int): CharacterPageResult {
-        cachedPages[page]?.let { cachedPage ->
-            return cachedPage
+    override fun observeCharacters(): Flow<List<CharacterModel>> {
+        return characterDao.observeCharacters().map { entities ->
+            entities.map { entity -> entity.toDomain() }
         }
+    }
 
+    override suspend fun refreshCharacters(page: Int): CharactersRefreshResult {
         val response = apiService.getCharacters(page)
 
         val characters = response.results.map { dto ->
-            dto.toDomain()
+            dto.toEntity()
         }
 
-        characters.forEach { character ->
-            cachedCharactersById[character.id] = character
-        }
+        characterDao.upsertCharacters(characters)
 
-        val result = CharacterPageResult(
-            characters = characters,
-            nextPage = extractNextPage(response.info.next),
-            isLastPage = response.info.next == null
+        val nextPage = extractNextPage(response.info.next)
+
+        return CharactersRefreshResult(
+            nextPage = nextPage,
+            isLastPage = nextPage == null
         )
-
-        cachedPages[page] = result
-        return result
     }
 
-    override suspend fun getCharacterById(id: Int): CharacterModel {
-        cachedCharactersById[id]?.let { cachedCharacter ->
-            return cachedCharacter
+    override fun observeCharacter(id: Int): Flow<CharacterModel?> {
+        return characterDao.observeCharacterById(id).map { entity ->
+            entity?.toDomain()
         }
+    }
 
+    override suspend fun refreshCharacter(id: Int) {
         val dto = apiService.getCharacterById(id)
+        val character = dto.toEntity()
 
-        val character = dto.toDomain()
-
-        cachedCharactersById[id] = character
-        return character
+        characterDao.upsertCharacter(character)
     }
 
-    private fun extractNextPage(nextUrl: String?): Int? {
-        return nextUrl
-            ?.substringAfter("page=", "")
-            ?.substringBefore("&")
-            ?.toIntOrNull()
-    }
+
+}
+
+private fun extractNextPage(nextUrl: String?): Int? {
+    return nextUrl
+        ?.substringAfter("page=", "")
+        ?.substringBefore("&")
+        ?.toIntOrNull()
 }

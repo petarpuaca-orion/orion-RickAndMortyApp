@@ -1,11 +1,12 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
-import android.os.SystemClock
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rickandmortyapp.domain.model.CharacterModel
-import com.example.rickandmortyapp.domain.repository.CharacterRepository
-import kotlinx.coroutines.delay
+import com.example.rickandmortyapp.domain.model.CharacterListResult
+import com.example.rickandmortyapp.domain.usecase.character.GetCharactersUseCase
+import com.example.rickandmortyapp.domain.usecase.character.LoadMoreCharactersUseCase
+import com.example.rickandmortyapp.domain.usecase.character.RefreshCharactersUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,60 +14,54 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CharacterListViewModel(
-    private val repository: CharacterRepository
+    private val getCharactersUseCase: GetCharactersUseCase,
+    private val refreshCharactersUseCase: RefreshCharactersUseCase,
+    private val loadMoreCharactersUseCase: LoadMoreCharactersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CharacterListUiState(isInitialLoading = true))
     val uiState: StateFlow<CharacterListUiState> = _uiState.asStateFlow()
 
-    private val visibleCharacters = mutableListOf<CharacterModel>()
-    private val bufferedCharacters = mutableListOf<CharacterModel>()
-
-    private var nextPage: Int? = 1
+    private var nextPageToLoad: Int? = 2
     private var lastPageReached = false
     private var requestInProgress = false
 
     init {
-        loadInitialCharacters()
+        observeCharacters()
     }
 
-    fun loadInitialCharacters() {
-        if (requestInProgress) return
-
+    private fun observeCharacters() {
         viewModelScope.launch {
-            requestInProgress = true
+            getCharactersUseCase().collect { result ->
+                when (result) {
+                    CharacterListResult.Loading -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isInitialLoading = true,
+                                errorMessage = null
+                            )
+                        }
+                    }
 
-            _uiState.update {
-                it.copy(
-                    isInitialLoading = true,
-                    isLoadingMore = false,
-                    errorMessage = null
-                )
-            }
+                    is CharacterListResult.Success -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                characters = result.characters,
+                                isInitialLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    }
 
-            try {
-                visibleCharacters.clear()
-                bufferedCharacters.clear()
-                nextPage = 1
-                lastPageReached = false
-
-                val result = repository.getCharactersPage(page = 1)
-
-                visibleCharacters.addAll(result.characters)
-                nextPage = result.nextPage
-                lastPageReached = result.isLastPage
-
-                publishState()
-            } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isInitialLoading = false,
-                        isLoadingMore = false,
-                        errorMessage = "Failed to load characters."
-                    )
+                    is CharacterListResult.Error -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isInitialLoading = false,
+                                errorMessage = result.message
+                            )
+                        }
+                    }
                 }
-            } finally {
-                requestInProgress = false
             }
         }
     }
@@ -76,42 +71,34 @@ class CharacterListViewModel(
 
         viewModelScope.launch {
             requestInProgress = true
-            val refreshStartTime = SystemClock.elapsedRealtime()
-            val minimumRefreshDuration = 500L
-            _uiState.update {
-                it.copy(
-                    isRefreshing = true,
-                    isInitialLoading = false,
-                    isLoadingMore = false,
-                    errorMessage = null
-                )
-            }
 
             try {
-                visibleCharacters.clear()
-                bufferedCharacters.clear()
-                nextPage = 1
-                lastPageReached = false
-
-                val elapsed = SystemClock.elapsedRealtime() - refreshStartTime
-                val remainingTime = minimumRefreshDuration - elapsed
-                if (remainingTime > 0) {
-                    delay(remainingTime)
-                }
-                val result = repository.getCharactersPage(page = 1)
-
-                visibleCharacters.addAll(result.characters)
-                nextPage = result.nextPage
-                lastPageReached = result.isLastPage
-
-                publishState()
-            } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        isLoadingMore = false,
-                        errorMessage = "Failed to refresh characters."
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isRefreshing = true,
+                        errorMessage = null
                     )
+                }
+
+                runCatching {
+                    refreshCharactersUseCase()
+                }.onSuccess { result ->
+                    nextPageToLoad = result.nextPage
+                    lastPageReached = result.isLastPage
+
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isRefreshing = false,
+                            endReached = result.isLastPage
+                        )
+                    }
+                }.onFailure { throwable ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isRefreshing = false,
+                            errorMessage = throwable.message ?: "Unknown error"
+                        )
+                    }
                 }
             } finally {
                 requestInProgress = false
@@ -120,65 +107,44 @@ class CharacterListViewModel(
     }
 
     fun loadMoreCharacters() {
-        if (requestInProgress) return
-        if (lastPageReached && bufferedCharacters.isEmpty()) return
+        if (requestInProgress || lastPageReached || nextPageToLoad == null) return
 
         viewModelScope.launch {
             requestInProgress = true
 
-            _uiState.update {
-                it.copy(
-                    isLoadingMore = true,
-                    errorMessage = null
-                )
-            }
-
             try {
-                appendNextChunk()
-
-                publishState()
-            } catch (_: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoadingMore = false,
-                        errorMessage = "Failed to load more characters."
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        isLoadingMore = true,
+                        errorMessage = null
                     )
+                }
+
+                val page = nextPageToLoad!!
+
+                runCatching {
+                    loadMoreCharactersUseCase(page)
+                }.onSuccess { result ->
+                    nextPageToLoad = result.nextPage
+                    lastPageReached = result.isLastPage
+
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoadingMore = false,
+                            endReached = result.isLastPage
+                        )
+                    }
+                }.onFailure { throwable ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            isLoadingMore = false,
+                            errorMessage = throwable.message ?: "Unknown error"
+                        )
+                    }
                 }
             } finally {
                 requestInProgress = false
             }
         }
-    }
-
-
-    private suspend fun appendNextChunk() {
-        if (bufferedCharacters.size < 10 && !lastPageReached) {
-            val pageToLoad = nextPage ?: return
-
-            val result = repository.getCharactersPage(pageToLoad)
-            bufferedCharacters.addAll(result.characters)
-
-            nextPage = result.nextPage
-            lastPageReached = result.isLastPage
-        }
-
-        val chunkSize = minOf(10, bufferedCharacters.size)
-        if (chunkSize > 0) {
-            val nextChunk = bufferedCharacters.take(chunkSize)
-            bufferedCharacters.subList(0, chunkSize).clear()
-            visibleCharacters.addAll(nextChunk)
-        }
-    }
-
-    private fun publishState() {
-        _uiState.value = CharacterListUiState(
-            characters = visibleCharacters.toList(),
-            isInitialLoading = false,
-            isLoadingMore = false,
-            errorMessage = null,
-            endReached = lastPageReached && bufferedCharacters.isEmpty(),
-            isRefreshing = false
-
-        )
     }
 }

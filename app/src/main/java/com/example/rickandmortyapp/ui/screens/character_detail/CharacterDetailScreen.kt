@@ -81,7 +81,7 @@ fun CharacterDetailScreen(
             uiState.errorMessage != null -> {
                 DetailErrorContent(
                     message = uiState.errorMessage,
-                    onRetry = { viewModel.loadCharacter() },
+                    onRetry = { viewModel.loadCharacterDetail() },
                     modifier = Modifier.padding(innerPadding)
                 )
             }

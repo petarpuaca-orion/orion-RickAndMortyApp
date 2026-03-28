@@ -3,14 +3,16 @@ package com.example.rickandmortyapp.ui.screens.character_detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rickandmortyapp.domain.repository.CharacterRepository
+import com.example.rickandmortyapp.domain.model.CharacterDetailResult
+import com.example.rickandmortyapp.domain.usecase.character.GetCharacterDetailUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class CharacterDetailViewModel(
-    private val repository: CharacterRepository,
+    private val getCharacterDetailUseCase: GetCharacterDetailUseCase,
     private val characterId: Int
 ) : ViewModel() {
 
@@ -18,24 +20,41 @@ class CharacterDetailViewModel(
     val uiState: StateFlow<CharacterDetailUiState> = _uiState.asStateFlow()
 
     init {
-        loadCharacter()
+        loadCharacterDetail()
     }
 
-    fun loadCharacter() {
+    fun loadCharacterDetail() {
         viewModelScope.launch {
-            _uiState.value = CharacterDetailUiState(isLoading = true)
+            getCharacterDetailUseCase(characterId).collect { result ->
+                when (result) {
+                    CharacterDetailResult.Loading -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = true,
+                                errorMessage = null
+                            )
+                        }
+                    }
 
-            try {
-                val character = repository.getCharacterById(characterId)
-                _uiState.value = CharacterDetailUiState(
-                    isLoading = false,
-                    character = character
-                )
-            } catch (e: Exception) {
-                _uiState.value = CharacterDetailUiState(
-                    isLoading = false,
-                    errorMessage = e.message
-                )
+                    is CharacterDetailResult.Success -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                character = result.character,
+                                isLoading = false,
+                                errorMessage = null
+                            )
+                        }
+                    }
+
+                    is CharacterDetailResult.Error -> {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                errorMessage = result.message
+                            )
+                        }
+                    }
+                }
             }
         }
     }

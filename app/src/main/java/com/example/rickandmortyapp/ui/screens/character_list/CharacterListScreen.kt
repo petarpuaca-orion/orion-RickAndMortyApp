@@ -70,7 +70,7 @@ fun CharacterListScreen(
             CharacterListScreenContent(
                 uiState = uiState,
                 listState = listState,
-                onRetry = { viewModel.loadInitialCharacters() },
+                onRetry = { viewModel.refreshCharacters() },
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onCharacterClick = onCharacterClick,
