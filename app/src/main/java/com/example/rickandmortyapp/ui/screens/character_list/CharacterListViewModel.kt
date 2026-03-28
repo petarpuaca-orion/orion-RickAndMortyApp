@@ -3,12 +3,16 @@ package com.example.rickandmortyapp.ui.screens.character_list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rickandmortyapp.core.notifications.CharacterNotificationEvent
 import com.example.rickandmortyapp.domain.model.CharacterListResult
 import com.example.rickandmortyapp.domain.usecase.character.GetCharactersUseCase
 import com.example.rickandmortyapp.domain.usecase.character.LoadMoreCharactersUseCase
 import com.example.rickandmortyapp.domain.usecase.character.RefreshCharactersUseCase
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -22,12 +26,22 @@ class CharacterListViewModel(
     private val _uiState = MutableStateFlow(CharacterListUiState(isInitialLoading = true))
     val uiState: StateFlow<CharacterListUiState> = _uiState.asStateFlow()
 
+    private val _notificationEvent = MutableSharedFlow<CharacterNotificationEvent>()
+    val notificationEvent: SharedFlow<CharacterNotificationEvent> =
+        _notificationEvent.asSharedFlow()
+
     private var nextPageToLoad: Int? = 2
     private var lastPageReached = false
     private var requestInProgress = false
 
+    private var shouldNotifyInitialLoadResult = true
+
     init {
         observeCharacters()
+    }
+
+    private suspend fun emitNotificationEvent(event: CharacterNotificationEvent) {
+        _notificationEvent.emit(event)
     }
 
     private fun observeCharacters() {
@@ -51,6 +65,13 @@ class CharacterListViewModel(
                                 errorMessage = null
                             )
                         }
+                        nextPageToLoad = result.nextPage
+                        lastPageReached = result.isLastPage
+
+                        if (shouldNotifyInitialLoadResult) {
+                            emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
+                            shouldNotifyInitialLoadResult = false
+                        }
                     }
 
                     is CharacterListResult.Error -> {
@@ -59,6 +80,10 @@ class CharacterListViewModel(
                                 isInitialLoading = false,
                                 errorMessage = result.message
                             )
+                        }
+                        if (shouldNotifyInitialLoadResult) {
+                            emitNotificationEvent(CharacterNotificationEvent.ShowError)
+                            shouldNotifyInitialLoadResult = false
                         }
                     }
                 }
@@ -92,6 +117,7 @@ class CharacterListViewModel(
                             endReached = result.isLastPage
                         )
                     }
+                    emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
                 }.onFailure { throwable ->
                     _uiState.update { currentState ->
                         currentState.copy(
@@ -99,6 +125,7 @@ class CharacterListViewModel(
                             errorMessage = throwable.message ?: "Unknown error"
                         )
                     }
+                    emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
                 }
             } finally {
                 requestInProgress = false
