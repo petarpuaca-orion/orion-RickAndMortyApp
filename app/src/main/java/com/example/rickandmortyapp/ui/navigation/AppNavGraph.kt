@@ -3,14 +3,22 @@ package com.example.rickandmortyapp.ui.navigation
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.room.Room
+import com.example.rickandmortyapp.data.local.database.AppDatabase
 import com.example.rickandmortyapp.data.remote.RetrofitInstance
 import com.example.rickandmortyapp.data.repository.CharacterRepositoryImpl
+import com.example.rickandmortyapp.domain.usecase.character.GetCharacterDetailUseCase
+import com.example.rickandmortyapp.domain.usecase.character.GetCharactersUseCase
+import com.example.rickandmortyapp.domain.usecase.character.LoadMoreCharactersUseCase
+import com.example.rickandmortyapp.domain.usecase.character.RefreshCharactersUseCase
 import com.example.rickandmortyapp.ui.screens.character_detail.CharacterDetailScreen
 import com.example.rickandmortyapp.ui.screens.character_detail.CharacterDetailViewModel
 import com.example.rickandmortyapp.ui.screens.character_detail.CharacterDetailViewModelFactory
@@ -22,7 +30,26 @@ import com.example.rickandmortyapp.ui.screens.character_list.CharacterListViewMo
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
-    val repository = CharacterRepositoryImpl(RetrofitInstance.api)
+    val context = LocalContext.current
+    val database = remember {
+        Room.databaseBuilder(
+            context.applicationContext,
+            AppDatabase::class.java,
+            "rick_and_morty_database"
+        ).build()
+    }
+
+    val repository = remember {
+        CharacterRepositoryImpl(
+            apiService = RetrofitInstance.api,
+            characterDao = database.characterDao()
+        )
+    }
+
+    val getCharactersUseCase = remember { GetCharactersUseCase(repository) }
+    val refreshCharactersUseCase = remember { RefreshCharactersUseCase(repository) }
+    val loadMoreCharactersUseCase = remember { LoadMoreCharactersUseCase(repository) }
+    val getCharacterDetailUseCase = remember { GetCharacterDetailUseCase(repository) }
 
     SharedTransitionLayout {
         NavHost(
@@ -32,7 +59,11 @@ fun AppNavGraph() {
 
             composable(AppDestinations.CHARACTER_LIST_ROUTE) {
                 val listViewModel: CharacterListViewModel = viewModel(
-                    factory = CharacterListViewModelFactory(repository)
+                    factory = CharacterListViewModelFactory(
+                        getCharactersUseCase = getCharactersUseCase,
+                        refreshCharactersUseCase = refreshCharactersUseCase,
+                        loadMoreCharactersUseCase = loadMoreCharactersUseCase
+                    )
                 )
 
                 CharacterListScreen(
@@ -59,7 +90,10 @@ fun AppNavGraph() {
                     backStackEntry.arguments?.getInt(AppDestinations.CHARACTER_ID_ARG) ?: 0
 
                 val detailViewModel: CharacterDetailViewModel = viewModel(
-                    factory = CharacterDetailViewModelFactory(repository, characterId)
+                    factory = CharacterDetailViewModelFactory(
+                        getCharacterDetailUseCase = getCharacterDetailUseCase,
+                        characterId = characterId
+                    )
                 )
 
                 CharacterDetailScreen(
