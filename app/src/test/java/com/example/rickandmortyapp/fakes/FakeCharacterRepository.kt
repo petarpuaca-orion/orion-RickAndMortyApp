@@ -5,7 +5,6 @@ import com.example.rickandmortyapp.domain.model.CharacterPageResult
 import com.example.rickandmortyapp.domain.repository.CharacterRepository
 
 class FakeCharacterRepository : CharacterRepository {
-
     var characterByIdResult: Result<CharacterModel>? = null
     var charactersPageResult: Result<CharacterPageResult>? = null
 

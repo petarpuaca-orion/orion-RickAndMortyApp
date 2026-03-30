@@ -8,5 +8,5 @@ data class CharacterListUiState(
     val isLoadingMore: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
-    val endReached: Boolean = false
+    val endReached: Boolean = false,
 )

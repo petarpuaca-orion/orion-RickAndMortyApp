@@ -6,15 +6,14 @@ import com.example.rickandmortyapp.domain.usecase.character.GetCharacterDetailUs
 
 class CharacterDetailViewModelFactory(
     private val getCharacterDetailUseCase: GetCharacterDetailUseCase,
-    private val characterId: Int
+    private val characterId: Int,
 ) : ViewModelProvider.Factory {
-
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CharacterDetailViewModel::class.java)) {
             return CharacterDetailViewModel(
                 getCharacterDetailUseCase = getCharacterDetailUseCase,
-                characterId = characterId
+                characterId = characterId,
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

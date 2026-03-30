@@ -6,8 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 interface CharacterRepository {
     fun observeCharacters(): Flow<List<CharacterModel>>
+
     suspend fun refreshCharacters(page: Int = 1): CharactersRefreshResult
 
     fun observeCharacter(id: Int): Flow<CharacterModel?>
+
     suspend fun refreshCharacter(id: Int)
 }

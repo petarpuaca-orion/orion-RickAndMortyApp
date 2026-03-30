@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CharacterDao {
-
     @Query("SELECT * FROM characters ORDER BY id ASC")
     fun observeCharacters(): Flow<List<CharacterEntity>>
 

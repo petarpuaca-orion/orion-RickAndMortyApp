@@ -31,20 +31,22 @@ import com.example.rickandmortyapp.ui.screens.character_list.CharacterListViewMo
 fun AppNavGraph() {
     val navController = rememberNavController()
     val context = LocalContext.current
-    val database = remember {
-        Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java,
-            "rick_and_morty_database"
-        ).build()
-    }
+    val database =
+        remember {
+            Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                "rick_and_morty_database",
+            ).build()
+        }
 
-    val repository = remember {
-        CharacterRepositoryImpl(
-            apiService = RetrofitInstance.api,
-            characterDao = database.characterDao()
-        )
-    }
+    val repository =
+        remember {
+            CharacterRepositoryImpl(
+                apiService = RetrofitInstance.api,
+                characterDao = database.characterDao(),
+            )
+        }
 
     val getCharactersUseCase = remember { GetCharactersUseCase(repository) }
     val refreshCharactersUseCase = remember { RefreshCharactersUseCase(repository) }
@@ -54,17 +56,18 @@ fun AppNavGraph() {
     SharedTransitionLayout {
         NavHost(
             navController = navController,
-            startDestination = AppDestinations.CHARACTER_LIST_ROUTE
+            startDestination = AppDestinations.CHARACTER_LIST_ROUTE,
         ) {
-
             composable(AppDestinations.CHARACTER_LIST_ROUTE) {
-                val listViewModel: CharacterListViewModel = viewModel(
-                    factory = CharacterListViewModelFactory(
-                        getCharactersUseCase = getCharactersUseCase,
-                        refreshCharactersUseCase = refreshCharactersUseCase,
-                        loadMoreCharactersUseCase = loadMoreCharactersUseCase
+                val listViewModel: CharacterListViewModel =
+                    viewModel(
+                        factory =
+                            CharacterListViewModelFactory(
+                                getCharactersUseCase = getCharactersUseCase,
+                                refreshCharactersUseCase = refreshCharactersUseCase,
+                                loadMoreCharactersUseCase = loadMoreCharactersUseCase,
+                            ),
                     )
-                )
 
                 CharacterListScreen(
                     viewModel = listViewModel,
@@ -72,35 +75,38 @@ fun AppNavGraph() {
                     animatedVisibilityScope = this,
                     onCharacterClick = { characterId ->
                         navController.navigate(
-                            "${AppDestinations.CHARACTER_DETAIL_ROUTE}/$characterId"
+                            "${AppDestinations.CHARACTER_DETAIL_ROUTE}/$characterId",
                         )
-                    }
+                    },
                 )
             }
 
             composable(
                 route = "${AppDestinations.CHARACTER_DETAIL_ROUTE}/{${AppDestinations.CHARACTER_ID_ARG}}",
-                arguments = listOf(
-                    navArgument(AppDestinations.CHARACTER_ID_ARG) {
-                        type = NavType.IntType
-                    }
-                )
+                arguments =
+                    listOf(
+                        navArgument(AppDestinations.CHARACTER_ID_ARG) {
+                            type = NavType.IntType
+                        },
+                    ),
             ) { backStackEntry ->
                 val characterId =
                     backStackEntry.arguments?.getInt(AppDestinations.CHARACTER_ID_ARG) ?: 0
 
-                val detailViewModel: CharacterDetailViewModel = viewModel(
-                    factory = CharacterDetailViewModelFactory(
-                        getCharacterDetailUseCase = getCharacterDetailUseCase,
-                        characterId = characterId
+                val detailViewModel: CharacterDetailViewModel =
+                    viewModel(
+                        factory =
+                            CharacterDetailViewModelFactory(
+                                getCharacterDetailUseCase = getCharacterDetailUseCase,
+                                characterId = characterId,
+                            ),
                     )
-                )
 
                 CharacterDetailScreen(
                     viewModel = detailViewModel,
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
                 )
             }
         }

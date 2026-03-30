@@ -12,9 +12,8 @@ import kotlinx.coroutines.flow.map
 
 class CharacterRepositoryImpl(
     private val apiService: RickAndMortyApiService,
-    private val characterDao: CharacterDao
+    private val characterDao: CharacterDao,
 ) : CharacterRepository {
-
     override fun observeCharacters(): Flow<List<CharacterModel>> {
         return characterDao.observeCharacters().map { entities ->
             entities.map { entity -> entity.toDomain() }
@@ -24,9 +23,10 @@ class CharacterRepositoryImpl(
     override suspend fun refreshCharacters(page: Int): CharactersRefreshResult {
         val response = apiService.getCharacters(page)
 
-        val characters = response.results.map { dto ->
-            dto.toEntity()
-        }
+        val characters =
+            response.results.map { dto ->
+                dto.toEntity()
+            }
 
         characterDao.upsertCharacters(characters)
 
@@ -34,7 +34,7 @@ class CharacterRepositoryImpl(
 
         return CharactersRefreshResult(
             nextPage = nextPage,
-            isLastPage = nextPage == null
+            isLastPage = nextPage == null,
         )
     }
 
@@ -50,8 +50,6 @@ class CharacterRepositoryImpl(
 
         characterDao.upsertCharacter(character)
     }
-
-
 }
 
 private fun extractNextPage(nextUrl: String?): Int? {

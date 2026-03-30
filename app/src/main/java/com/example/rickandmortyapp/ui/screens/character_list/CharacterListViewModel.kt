@@ -1,6 +1,5 @@
 package com.example.rickandmortyapp.ui.screens.character_list
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rickandmortyapp.core.notifications.CharacterNotificationEvent
@@ -20,9 +19,8 @@ import kotlinx.coroutines.launch
 class CharacterListViewModel(
     private val getCharactersUseCase: GetCharactersUseCase,
     private val refreshCharactersUseCase: RefreshCharactersUseCase,
-    private val loadMoreCharactersUseCase: LoadMoreCharactersUseCase
+    private val loadMoreCharactersUseCase: LoadMoreCharactersUseCase,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(CharacterListUiState(isInitialLoading = true))
     val uiState: StateFlow<CharacterListUiState> = _uiState.asStateFlow()
 
@@ -52,7 +50,7 @@ class CharacterListViewModel(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isInitialLoading = true,
-                                errorMessage = null
+                                errorMessage = null,
                             )
                         }
                     }
@@ -62,11 +60,10 @@ class CharacterListViewModel(
                             currentState.copy(
                                 characters = result.characters,
                                 isInitialLoading = false,
-                                errorMessage = null
+                                errorMessage = null,
                             )
                         }
-                        nextPageToLoad = result.nextPage
-                        lastPageReached = result.isLastPage
+
 
                         if (shouldNotifyInitialLoadResult) {
                             emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
@@ -78,7 +75,7 @@ class CharacterListViewModel(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isInitialLoading = false,
-                                errorMessage = result.message
+                                errorMessage = result.message,
                             )
                         }
                         if (shouldNotifyInitialLoadResult) {
@@ -101,7 +98,7 @@ class CharacterListViewModel(
                 _uiState.update { currentState ->
                     currentState.copy(
                         isRefreshing = true,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
 
@@ -114,7 +111,7 @@ class CharacterListViewModel(
                     _uiState.update { currentState ->
                         currentState.copy(
                             isRefreshing = false,
-                            endReached = result.isLastPage
+                            endReached = result.isLastPage,
                         )
                     }
                     emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
@@ -122,7 +119,7 @@ class CharacterListViewModel(
                     _uiState.update { currentState ->
                         currentState.copy(
                             isRefreshing = false,
-                            errorMessage = throwable.message ?: "Unknown error"
+                            errorMessage = throwable.message ?: "Unknown error",
                         )
                     }
                     emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
@@ -143,7 +140,7 @@ class CharacterListViewModel(
                 _uiState.update { currentState ->
                     currentState.copy(
                         isLoadingMore = true,
-                        errorMessage = null
+                        errorMessage = null,
                     )
                 }
 
@@ -158,14 +155,14 @@ class CharacterListViewModel(
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoadingMore = false,
-                            endReached = result.isLastPage
+                            endReached = result.isLastPage,
                         )
                     }
                 }.onFailure { throwable ->
                     _uiState.update { currentState ->
                         currentState.copy(
                             isLoadingMore = false,
-                            errorMessage = throwable.message ?: "Unknown error"
+                            errorMessage = throwable.message ?: "Unknown error",
                         )
                     }
                 }
