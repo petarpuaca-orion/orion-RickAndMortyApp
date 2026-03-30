@@ -64,7 +64,6 @@ class CharacterListViewModel(
                             )
                         }
 
-
                         if (shouldNotifyInitialLoadResult) {
                             emitNotificationEvent(CharacterNotificationEvent.ShowSuccess)
                             shouldNotifyInitialLoadResult = false

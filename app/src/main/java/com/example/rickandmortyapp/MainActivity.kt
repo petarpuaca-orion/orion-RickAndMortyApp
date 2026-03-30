@@ -30,11 +30,6 @@ class MainActivity : ComponentActivity() {
                 .start()
         }
 
-
-
-
-
-        
         super.onCreate(savedInstanceState)
 
         val notificationHelper = CharacterNotificationHelper(this)
