@@ -8,29 +8,30 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class GetCharactersUseCase(
-    private val repository: CharacterRepository
+    private val repository: CharacterRepository,
 ) {
-    operator fun invoke(): Flow<CharacterListResult> = channelFlow {
-        send(CharacterListResult.Loading)
+    operator fun invoke(): Flow<CharacterListResult> =
+        channelFlow {
+            send(CharacterListResult.Loading)
 
-        launch {
-            repository.observeCharacters().collectLatest { characters ->
-                send(
-                    CharacterListResult.Success(
-                        characters = characters,
-                        nextPage = null,
-                        isLastPage = false
+            launch {
+                repository.observeCharacters().collectLatest { characters ->
+                    send(
+                        CharacterListResult.Success(
+                            characters = characters,
+                            nextPage = null,
+                            isLastPage = false,
+                        ),
                     )
-                )
+                }
             }
-        }
 
-        launch {
-            try {
-                repository.refreshCharacters(page = 1)
-            } catch (e: Exception) {
-                send(CharacterListResult.Error(e.message ?: "Unknown error"))
+            launch {
+                try {
+                    repository.refreshCharacters(page = 1)
+                } catch (e: Exception) {
+                    send(CharacterListResult.Error(e.message ?: "Unknown error"))
+                }
             }
         }
-    }
 }

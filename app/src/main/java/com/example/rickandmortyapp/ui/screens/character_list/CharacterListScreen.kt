@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,22 +56,23 @@ fun CharacterListScreen(
     viewModel: CharacterListViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onCharacterClick: (Int) -> Unit
+    onCharacterClick: (Int) -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val context = LocalContext.current
-    val notificationHelper = remember(context) {
-        CharacterNotificationHelper(context)
-    }
+    val notificationHelper =
+        remember(context) {
+            CharacterNotificationHelper(context)
+        }
     LaunchedEffect(viewModel, notificationHelper) {
         viewModel.notificationEvent.collect { event ->
             val hasNotificationPermission =
                 Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(
-                            context,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        ) == PackageManager.PERMISSION_GRANTED
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS,
+                    ) == PackageManager.PERMISSION_GRANTED
 
             if (!hasNotificationPermission) return@collect
 
@@ -89,7 +91,7 @@ fun CharacterListScreen(
     CharacterListPaginationEffect(
         listState = listState,
         uiState = uiState,
-        onLoadMore = { viewModel.loadMoreCharacters() }
+        onLoadMore = { viewModel.loadMoreCharacters() },
     )
 
     Scaffold { innerPadding ->
@@ -99,9 +101,10 @@ fun CharacterListScreen(
                 Log.d("UI", "onRefreshTriggered")
                 viewModel.refreshCharacters()
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
         ) {
             CharacterListScreenContent(
                 uiState = uiState,
@@ -110,7 +113,7 @@ fun CharacterListScreen(
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 onCharacterClick = onCharacterClick,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
@@ -125,7 +128,7 @@ fun CharacterListScreenContent(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onRetry: () -> Unit,
     onCharacterClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     when {
         uiState.isInitialLoading && uiState.characters.isEmpty() -> {
@@ -136,7 +139,7 @@ fun CharacterListScreenContent(
             ErrorContent(
                 message = uiState.errorMessage,
                 onRetry = onRetry,
-                modifier = modifier
+                modifier = modifier,
             )
         }
 
@@ -148,7 +151,7 @@ fun CharacterListScreenContent(
                 onCharacterClick = onCharacterClick,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                modifier = modifier
+                modifier = modifier,
             )
         }
     }
@@ -158,9 +161,12 @@ fun CharacterListScreenContent(
 fun CharacterListPaginationEffect(
     listState: LazyListState,
     uiState: CharacterListUiState,
-    onLoadMore: () -> Unit
+    onLoadMore: () -> Unit,
 ) {
-    LaunchedEffect(listState, uiState.characters.size, uiState.endReached) {
+    val currentUiState by rememberUpdatedState(uiState)
+    val currentOnLoadMore by rememberUpdatedState(onLoadMore)
+
+    LaunchedEffect(listState) {
         snapshotFlow {
             val layoutInfo = listState.layoutInfo
             val totalItemsCount = layoutInfo.totalItemsCount
@@ -170,24 +176,22 @@ fun CharacterListPaginationEffect(
         }.collect { shouldLoadMore ->
             if (
                 shouldLoadMore &&
-                !uiState.isInitialLoading &&
-                !uiState.isRefreshing &&
-                !uiState.isLoadingMore &&
-                !uiState.endReached
+                !currentUiState.isInitialLoading &&
+                !currentUiState.isRefreshing &&
+                !currentUiState.isLoadingMore &&
+                !currentUiState.endReached
             ) {
-                onLoadMore()
+                currentOnLoadMore()
             }
         }
     }
 }
 
 @Composable
-fun LoadingContent(
-    modifier: Modifier = Modifier
-) {
+fun LoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
@@ -197,18 +201,19 @@ fun LoadingContent(
 fun ErrorContent(
     message: String?,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(16.dp),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = message ?: stringResource(R.string.something_went_wrong),
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -228,24 +233,25 @@ fun CharacterListContent(
     animatedVisibilityScope: AnimatedVisibilityScope,
     isLoadingMore: Boolean,
     onCharacterClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(
             items = characters,
-            key = { character -> character.id }
+            key = { character -> character.id },
         ) { character ->
             CharacterCard(
                 character = character,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
-                onClick = { onCharacterClick(character.id) }
+                onClick = { onCharacterClick(character.id) },
             )
         }
 
@@ -260,41 +266,43 @@ fun CharacterListContent(
 @Composable
 fun LoadingMoreItem() {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
 }
 
-private fun previewCharacters() = listOf(
-    CharacterModel(
-        id = 1,
-        name = "Rick Sanchez",
-        status = "Alive",
-        species = "Human",
-        gender = "Male",
-        image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
-    ),
-    CharacterModel(
-        id = 2,
-        name = "Morty Smith",
-        status = "Alive",
-        species = "Human",
-        gender = "Male",
-        image = "https://rickandmortyapi.com/api/character/avatar/2.jpeg"
-    ),
-    CharacterModel(
-        id = 3,
-        name = "Summer Smith",
-        status = "Alive",
-        species = "Human",
-        gender = "Male",
-        image = "https://rickandmortyapi.com/api/character/avatar/3.jpeg"
+private fun previewCharacters() =
+    listOf(
+        CharacterModel(
+            id = 1,
+            name = "Rick Sanchez",
+            status = "Alive",
+            species = "Human",
+            gender = "Male",
+            image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
+        ),
+        CharacterModel(
+            id = 2,
+            name = "Morty Smith",
+            status = "Alive",
+            species = "Human",
+            gender = "Male",
+            image = "https://rickandmortyapi.com/api/character/avatar/2.jpeg",
+        ),
+        CharacterModel(
+            id = 3,
+            name = "Summer Smith",
+            status = "Alive",
+            species = "Human",
+            gender = "Male",
+            image = "https://rickandmortyapi.com/api/character/avatar/3.jpeg",
+        ),
     )
-)
 
 @Preview(showBackground = true)
 @Composable
@@ -307,7 +315,7 @@ fun LoadingContentPreview() {
 fun ErrorContentPreview() {
     ErrorContent(
         message = "Failed to load characters.",
-        onRetry = {}
+        onRetry = {},
     )
 }
 
@@ -316,7 +324,7 @@ fun ErrorContentPreview() {
 fun ErrorContentWithDefaultMessagePreview() {
     ErrorContent(
         message = null,
-        onRetry = {}
+        onRetry = {},
     )
 }
 
@@ -338,7 +346,7 @@ fun CharacterListContentPreview() {
                 sharedTransitionScope = this@SharedTransitionLayout,
                 animatedVisibilityScope = this,
                 isLoadingMore = false,
-                onCharacterClick = {}
+                onCharacterClick = {},
             )
         }
     }
@@ -349,7 +357,6 @@ fun CharacterListContentPreview() {
 @Composable
 fun CharacterListContentLoadingMorePreview() {
     SharedTransitionLayout {
-
         AnimatedVisibility(visible = true) {
             CharacterListContent(
                 characters = previewCharacters(),
@@ -357,7 +364,7 @@ fun CharacterListContentLoadingMorePreview() {
                 sharedTransitionScope = this@SharedTransitionLayout,
                 animatedVisibilityScope = this,
                 isLoadingMore = false,
-                onCharacterClick = {}
+                onCharacterClick = {},
             )
         }
     }
@@ -370,15 +377,16 @@ fun CharacterListScreenContentLoadingPreview() {
     SharedTransitionLayout {
         AnimatedVisibility(visible = true) {
             CharacterListScreenContent(
-                uiState = CharacterListUiState(
-                    isInitialLoading = true,
-                    characters = emptyList()
-                ),
+                uiState =
+                    CharacterListUiState(
+                        isInitialLoading = true,
+                        characters = emptyList(),
+                    ),
                 listState = rememberLazyListState(),
                 sharedTransitionScope = this@SharedTransitionLayout,
                 animatedVisibilityScope = this,
                 onRetry = {},
-                onCharacterClick = {}
+                onCharacterClick = {},
             )
         }
     }
@@ -391,16 +399,17 @@ fun CharacterListScreenContentErrorPreview() {
     SharedTransitionLayout {
         AnimatedVisibility(visible = true) {
             CharacterListScreenContent(
-                uiState = CharacterListUiState(
-                    isInitialLoading = false,
-                    characters = emptyList(),
-                    errorMessage = "Something went wrong."
-                ),
+                uiState =
+                    CharacterListUiState(
+                        isInitialLoading = false,
+                        characters = emptyList(),
+                        errorMessage = "Something went wrong.",
+                    ),
                 listState = rememberLazyListState(),
                 sharedTransitionScope = this@SharedTransitionLayout,
                 animatedVisibilityScope = this,
                 onRetry = {},
-                onCharacterClick = {}
+                onCharacterClick = {},
             )
         }
     }
@@ -413,18 +422,19 @@ fun CharacterListScreenContentSuccessPreview() {
     SharedTransitionLayout {
         AnimatedVisibility(visible = true) {
             CharacterListScreenContent(
-                uiState = CharacterListUiState(
-                    isInitialLoading = false,
-                    characters = previewCharacters(),
-                    isLoadingMore = false,
-                    endReached = false,
-                    errorMessage = null
-                ),
+                uiState =
+                    CharacterListUiState(
+                        isInitialLoading = false,
+                        characters = previewCharacters(),
+                        isLoadingMore = false,
+                        endReached = false,
+                        errorMessage = null,
+                    ),
                 listState = rememberLazyListState(),
                 sharedTransitionScope = this@SharedTransitionLayout,
                 animatedVisibilityScope = this,
                 onRetry = {},
-                onCharacterClick = {}
+                onCharacterClick = {},
             )
         }
     }

@@ -13,7 +13,6 @@ import com.example.rickandmortyapp.ui.navigation.AppNavGraph
 import com.example.rickandmortyapp.ui.theme.RickAndMortyAppTheme
 
 class MainActivity : ComponentActivity() {
-
     private val requestNotificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
         }
@@ -39,7 +38,6 @@ class MainActivity : ComponentActivity() {
             requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-
         enableEdgeToEdge()
         setContent {
             RickAndMortyAppTheme {
@@ -47,7 +45,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }
 
 @Composable

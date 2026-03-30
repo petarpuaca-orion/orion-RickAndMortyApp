@@ -1,6 +1,5 @@
 package com.example.rickandmortyapp.ui.screens.character_detail
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rickandmortyapp.domain.model.CharacterDetailResult
@@ -13,9 +12,8 @@ import kotlinx.coroutines.launch
 
 class CharacterDetailViewModel(
     private val getCharacterDetailUseCase: GetCharacterDetailUseCase,
-    private val characterId: Int
+    private val characterId: Int,
 ) : ViewModel() {
-
     private val _uiState = MutableStateFlow(CharacterDetailUiState(isLoading = true))
     val uiState: StateFlow<CharacterDetailUiState> = _uiState.asStateFlow()
 
@@ -31,7 +29,7 @@ class CharacterDetailViewModel(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isLoading = true,
-                                errorMessage = null
+                                errorMessage = null,
                             )
                         }
                     }
@@ -41,7 +39,7 @@ class CharacterDetailViewModel(
                             currentState.copy(
                                 character = result.character,
                                 isLoading = false,
-                                errorMessage = null
+                                errorMessage = null,
                             )
                         }
                     }
@@ -50,7 +48,7 @@ class CharacterDetailViewModel(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isLoading = false,
-                                errorMessage = result.message
+                                errorMessage = result.message,
                             )
                         }
                     }

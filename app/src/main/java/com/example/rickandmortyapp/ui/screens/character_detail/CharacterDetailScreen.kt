@@ -1,6 +1,5 @@
 package com.example.rickandmortyapp.ui.screens.character_detail
 
-
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
@@ -49,7 +48,7 @@ fun CharacterDetailScreen(
     viewModel: CharacterDetailViewModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val character = uiState.character
@@ -64,17 +63,17 @@ fun CharacterDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back_content_description)
+                            contentDescription = stringResource(R.string.back_content_description),
                         )
                     }
-                }
+                },
             )
-        }
+        },
     ) { innerPadding ->
         when {
             uiState.isLoading -> {
                 DetailLoadingContent(
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
 
@@ -82,7 +81,7 @@ fun CharacterDetailScreen(
                 DetailErrorContent(
                     message = uiState.errorMessage,
                     onRetry = { viewModel.loadCharacterDetail() },
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
 
@@ -91,7 +90,7 @@ fun CharacterDetailScreen(
                     character = character,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
-                    modifier = Modifier.padding(innerPadding)
+                    modifier = Modifier.padding(innerPadding),
                 )
             }
         }
@@ -102,7 +101,7 @@ fun CharacterDetailScreen(
 fun DetailLoadingContent(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
@@ -112,23 +111,24 @@ fun DetailLoadingContent(modifier: Modifier = Modifier) {
 fun DetailErrorContent(
     message: String?,
     modifier: Modifier = Modifier,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .padding(16.dp),
         verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = message ?: stringResource(R.string.something_went_wrong),
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
         )
 
         Button(
             onClick = onRetry,
-            modifier = modifier.padding(top = 16.dp)
+            modifier = modifier.padding(top = 16.dp),
         ) {
             Text(text = stringResource(R.string.retry))
         }
@@ -141,67 +141,71 @@ fun DetailContent(
     character: CharacterModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val imageKey = CharacterSharedTransitionKeys.imageKey(character.id)
     Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier =
+            modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
         with(sharedTransitionScope) {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(character.image)
-                    .memoryCacheKey(imageKey)
-                    .placeholderMemoryCacheKey(imageKey)
-                    .crossfade(true)
-                    .build(),
+                model =
+                    ImageRequest.Builder(context)
+                        .data(character.image)
+                        .memoryCacheKey(imageKey)
+                        .placeholderMemoryCacheKey(imageKey)
+                        .crossfade(true)
+                        .build(),
                 contentDescription = character.name,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier
-                    .sharedElement(
-                        state = rememberSharedContentState(key = imageKey),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ ->
-                            tween(durationMillis = 700)
-                        }
-                    )
-                    .fillMaxWidth()
-                    .height(300.dp)
+                modifier =
+                    Modifier
+                        .sharedElement(
+                            state = rememberSharedContentState(key = imageKey),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                tween(durationMillis = 700)
+                            },
+                        )
+                        .fillMaxWidth()
+                        .height(300.dp),
             )
         }
 
         with(animatedVisibilityScope) {
             Column(
-                modifier = Modifier.animateEnterExit(
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 })
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier =
+                    Modifier.animateEnterExit(
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { it / 4 }),
+                    ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = character.name,
-                    style = MaterialTheme.typography.headlineMedium
+                    style = MaterialTheme.typography.headlineMedium,
                 )
 
                 Text(
                     text = stringResource(R.string.status_label, character.status),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
 
                 Text(
                     text = stringResource(R.string.species_label, character.species),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
 
                 Text(
                     text = stringResource(R.string.gender_label, character.gender),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
         }

@@ -35,49 +35,53 @@ fun CharacterCard(
     character: CharacterModel,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val imageKey = CharacterSharedTransitionKeys.imageKey(character.id)
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             with(sharedTransitionScope) {
                 AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(character.image)
-                        .memoryCacheKey(imageKey)
-                        .placeholderMemoryCacheKey(imageKey)
-                        .crossfade(true)
-                        .build(),
+                    model =
+                        ImageRequest.Builder(context)
+                            .data(character.image)
+                            .memoryCacheKey(imageKey)
+                            .placeholderMemoryCacheKey(imageKey)
+                            .crossfade(true)
+                            .build(),
                     contentDescription = character.name,
-                    modifier = Modifier
-                        .sharedElement(
-                            state = rememberSharedContentState(key = imageKey),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            boundsTransform = { _, _ ->
-                                tween(durationMillis = 700)
-                            }
-                        )
-                        .size(72.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                    modifier =
+                        Modifier
+                            .sharedElement(
+                                state = rememberSharedContentState(key = imageKey),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                boundsTransform = { _, _ ->
+                                    tween(durationMillis = 700)
+                                },
+                            )
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                 )
             }
 
             Text(
                 text = character.name,
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }
@@ -91,17 +95,18 @@ fun CharacterCardPreview() {
         SharedTransitionLayout {
             AnimatedVisibility(visible = true) {
                 CharacterCard(
-                    character = CharacterModel(
-                        id = 1,
-                        name = "Rick Sanchez",
-                        status = "Alive",
-                        species = "Human",
-                        gender = "Male",
-                        image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg"
-                    ),
+                    character =
+                        CharacterModel(
+                            id = 1,
+                            name = "Rick Sanchez",
+                            status = "Alive",
+                            species = "Human",
+                            gender = "Male",
+                            image = "https://rickandmortyapi.com/api/character/avatar/1.jpeg",
+                        ),
                     sharedTransitionScope = this@SharedTransitionLayout,
                     animatedVisibilityScope = this,
-                    onClick = {}
+                    onClick = {},
                 )
             }
         }

@@ -14,98 +14,105 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterDetailViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun loadCharacter_whenRepositoryReturnsSuccess_updatesUiStateWithCharacter() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadCharacter_whenRepositoryReturnsSuccess_updatesUiStateWithCharacter() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        val expectedCharacter = CharacterModel(
-            id = 1,
-            name = "Rick Sanchez",
-            status = "Alive",
-            species = "Human",
-            gender = "Male",
-            image = "https://example.com/rick.png"
-        )
+            val expectedCharacter =
+                CharacterModel(
+                    id = 1,
+                    name = "Rick Sanchez",
+                    status = "Alive",
+                    species = "Human",
+                    gender = "Male",
+                    image = "https://example.com/rick.png",
+                )
 
-        fakeRepository.characterByIdResult = Result.success(expectedCharacter)
+            fakeRepository.characterByIdResult = Result.success(expectedCharacter)
 
-        val viewModel = CharacterDetailViewModel(
-            repository = fakeRepository,
-            characterId = 1
-        )
+            val viewModel =
+                CharacterDetailViewModel(
+                    repository = fakeRepository,
+                    characterId = 1,
+                )
 
-        advanceUntilIdle()
+            advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value
+            val uiState = viewModel.uiState.value
 
-        assertFalse(uiState.isLoading)
-        assertEquals(expectedCharacter, uiState.character)
-        assertNull(uiState.errorMessage)
-        assertEquals(1, fakeRepository.getCharacterByIdCallCount)
-    }
-
-    @Test
-    fun loadCharacter_whenRepositoryReturnsError_updatesUiStateWithError() = runTest {
-        val fakeRepository = FakeCharacterRepository()
-
-        fakeRepository.characterByIdResult =
-            Result.failure(RuntimeException("Network error"))
-
-        val viewModel = CharacterDetailViewModel(
-            repository = fakeRepository,
-            characterId = 1
-        )
-
-        advanceUntilIdle()
-
-        val uiState = viewModel.uiState.value
-
-        assertFalse(uiState.isLoading)
-        assertNull(uiState.character)
-        assertEquals("Network error", uiState.errorMessage)
-        assertEquals(1, fakeRepository.getCharacterByIdCallCount)
-    }
+            assertFalse(uiState.isLoading)
+            assertEquals(expectedCharacter, uiState.character)
+            assertNull(uiState.errorMessage)
+            assertEquals(1, fakeRepository.getCharacterByIdCallCount)
+        }
 
     @Test
-    fun loadCharacter_whenCalledAgainAfterError_updatesUiStateWithSuccess() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadCharacter_whenRepositoryReturnsError_updatesUiStateWithError() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        fakeRepository.characterByIdResult =
-            Result.failure(RuntimeException("Network error"))
+            fakeRepository.characterByIdResult =
+                Result.failure(RuntimeException("Network error"))
 
-        val viewModel = CharacterDetailViewModel(
-            repository = fakeRepository,
-            characterId = 1
-        )
+            val viewModel =
+                CharacterDetailViewModel(
+                    repository = fakeRepository,
+                    characterId = 1,
+                )
 
-        advanceUntilIdle()
+            advanceUntilIdle()
 
-        assertEquals("Network error", viewModel.uiState.value.errorMessage)
-        assertNull(viewModel.uiState.value.character)
+            val uiState = viewModel.uiState.value
 
-        val expectedCharacter = CharacterModel(
-            id = 1,
-            name = "Rick Sanchez",
-            status = "Alive",
-            species = "Human",
-            gender = "Male",
-            image = "https://example.com/rick.png"
-        )
+            assertFalse(uiState.isLoading)
+            assertNull(uiState.character)
+            assertEquals("Network error", uiState.errorMessage)
+            assertEquals(1, fakeRepository.getCharacterByIdCallCount)
+        }
 
-        fakeRepository.characterByIdResult = Result.success(expectedCharacter)
+    @Test
+    fun loadCharacter_whenCalledAgainAfterError_updatesUiStateWithSuccess() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        viewModel.loadCharacter()
-        advanceUntilIdle()
+            fakeRepository.characterByIdResult =
+                Result.failure(RuntimeException("Network error"))
 
-        val uiState = viewModel.uiState.value
+            val viewModel =
+                CharacterDetailViewModel(
+                    repository = fakeRepository,
+                    characterId = 1,
+                )
 
-        assertFalse(uiState.isLoading)
-        assertEquals(expectedCharacter, uiState.character)
-        assertNull(uiState.errorMessage)
-        assertEquals(2, fakeRepository.getCharacterByIdCallCount)
-    }
+            advanceUntilIdle()
+
+            assertEquals("Network error", viewModel.uiState.value.errorMessage)
+            assertNull(viewModel.uiState.value.character)
+
+            val expectedCharacter =
+                CharacterModel(
+                    id = 1,
+                    name = "Rick Sanchez",
+                    status = "Alive",
+                    species = "Human",
+                    gender = "Male",
+                    image = "https://example.com/rick.png",
+                )
+
+            fakeRepository.characterByIdResult = Result.success(expectedCharacter)
+
+            viewModel.loadCharacter()
+            advanceUntilIdle()
+
+            val uiState = viewModel.uiState.value
+
+            assertFalse(uiState.isLoading)
+            assertEquals(expectedCharacter, uiState.character)
+            assertNull(uiState.errorMessage)
+            assertEquals(2, fakeRepository.getCharacterByIdCallCount)
+        }
 }

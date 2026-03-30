@@ -18,7 +18,6 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterListViewModelTest {
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -27,32 +26,34 @@ class CharacterListViewModelTest {
         runTest {
             val fakeRepository = FakeCharacterRepository()
 
-            val expectedCharacters = listOf(
-                CharacterModel(
-                    id = 1,
-                    name = "Rick Sanchez",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://example.com/rick.png"
-                ),
-                CharacterModel(
-                    id = 2,
-                    name = "Morty Smith",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://example.com/morty.png"
+            val expectedCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
+                    CharacterModel(
+                        id = 2,
+                        name = "Morty Smith",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/morty.png",
+                    ),
                 )
-            )
 
-            fakeRepository.charactersPageResult = Result.success(
-                CharacterPageResult(
-                    characters = expectedCharacters,
-                    nextPage = 2,
-                    isLastPage = false
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = expectedCharacters,
+                        nextPage = 2,
+                        isLastPage = false,
+                    ),
                 )
-            )
 
             val viewModel = CharacterListViewModel(fakeRepository)
 
@@ -70,117 +71,125 @@ class CharacterListViewModelTest {
         }
 
     @Test
-    fun loadInitialCharacters_whenRepositoryReturnsError_updatesUiStateWithError() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadInitialCharacters_whenRepositoryReturnsError_updatesUiStateWithError() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        fakeRepository.charactersPageResult =
-            Result.failure(RuntimeException("Network error"))
+            fakeRepository.charactersPageResult =
+                Result.failure(RuntimeException("Network error"))
 
-        val viewModel = CharacterListViewModel(fakeRepository)
+            val viewModel = CharacterListViewModel(fakeRepository)
 
-        advanceUntilIdle()
+            advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value
+            val uiState = viewModel.uiState.value
 
-        assertTrue(uiState.characters.isEmpty())
-        assertFalse(uiState.isInitialLoading)
-        assertFalse(uiState.isLoadingMore)
-        assertFalse(uiState.isRefreshing)
-        assertEquals("Failed to load characters.", uiState.errorMessage)
-        assertFalse(uiState.endReached)
-        assertEquals(1, fakeRepository.getCharactersPageCallCount)
-    }
+            assertTrue(uiState.characters.isEmpty())
+            assertFalse(uiState.isInitialLoading)
+            assertFalse(uiState.isLoadingMore)
+            assertFalse(uiState.isRefreshing)
+            assertEquals("Failed to load characters.", uiState.errorMessage)
+            assertFalse(uiState.endReached)
+            assertEquals(1, fakeRepository.getCharactersPageCallCount)
+        }
 
     @Test
-    fun loadMoreCharacters_whenNextPageExists_appendsNextChunkToVisibleCharacters() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadMoreCharacters_whenNextPageExists_appendsNextChunkToVisibleCharacters() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        val initialCharacters = listOf(
-            CharacterModel(
-                id = 1,
-                name = "Rick Sanchez",
-                status = "Alive",
-                species = "Human",
-                gender = "Male",
-                image = "https://example.com/rick.png"
-            )
-        )
+            val initialCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
+                )
 
-        val moreCharacters = listOf(
-            CharacterModel(
-                id = 2,
-                name = "Morty Smith",
-                status = "Alive",
-                species = "Human",
-                gender = "Male",
-                image = "https://example.com/morty.png"
-            ),
-            CharacterModel(
-                id = 3,
-                name = "Summer Smith",
-                status = "Alive",
-                species = "Human",
-                gender = "Female",
-                image = "https://example.com/summer.png"
-            )
-        )
+            val moreCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 2,
+                        name = "Morty Smith",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/morty.png",
+                    ),
+                    CharacterModel(
+                        id = 3,
+                        name = "Summer Smith",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Female",
+                        image = "https://example.com/summer.png",
+                    ),
+                )
 
-        fakeRepository.charactersPageResult = Result.success(
-            CharacterPageResult(
-                characters = initialCharacters,
-                nextPage = 2,
-                isLastPage = false
-            )
-        )
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = initialCharacters,
+                        nextPage = 2,
+                        isLastPage = false,
+                    ),
+                )
 
-        val viewModel = CharacterListViewModel(fakeRepository)
-        advanceUntilIdle()
+            val viewModel = CharacterListViewModel(fakeRepository)
+            advanceUntilIdle()
 
-        fakeRepository.charactersPageResult = Result.success(
-            CharacterPageResult(
-                characters = moreCharacters,
-                nextPage = null,
-                isLastPage = true
-            )
-        )
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = moreCharacters,
+                        nextPage = null,
+                        isLastPage = true,
+                    ),
+                )
 
-        viewModel.loadMoreCharacters()
-        advanceUntilIdle()
+            viewModel.loadMoreCharacters()
+            advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value
+            val uiState = viewModel.uiState.value
 
-        assertEquals(initialCharacters + moreCharacters, uiState.characters)
-        assertFalse(uiState.isInitialLoading)
-        assertFalse(uiState.isLoadingMore)
-        assertFalse(uiState.isRefreshing)
-        assertNull(uiState.errorMessage)
-        assertTrue(uiState.endReached)
-        assertEquals(2, fakeRepository.getCharactersPageCallCount)
-    }
+            assertEquals(initialCharacters + moreCharacters, uiState.characters)
+            assertFalse(uiState.isInitialLoading)
+            assertFalse(uiState.isLoadingMore)
+            assertFalse(uiState.isRefreshing)
+            assertNull(uiState.errorMessage)
+            assertTrue(uiState.endReached)
+            assertEquals(2, fakeRepository.getCharactersPageCallCount)
+        }
 
     @Test
     fun loadMoreCharacters_whenRepositoryReturnsError_keepsExistingCharactersAndUpdatesErrorState() =
         runTest {
             val fakeRepository = FakeCharacterRepository()
 
-            val initialCharacters = listOf(
-                CharacterModel(
-                    id = 1,
-                    name = "Rick Sanchez",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://example.com/rick.png"
+            val initialCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
                 )
-            )
 
-            fakeRepository.charactersPageResult = Result.success(
-                CharacterPageResult(
-                    characters = initialCharacters,
-                    nextPage = 2,
-                    isLastPage = false
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = initialCharacters,
+                        nextPage = 2,
+                        isLastPage = false,
+                    ),
                 )
-            )
 
             val viewModel = CharacterListViewModel(fakeRepository)
             advanceUntilIdle()
@@ -203,98 +212,104 @@ class CharacterListViewModelTest {
         }
 
     @Test
-    fun loadMoreCharacters_whenNoNextPage_doesNotCallRepositoryAgain() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadMoreCharacters_whenNoNextPage_doesNotCallRepositoryAgain() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        val initialCharacters = listOf(
-            CharacterModel(
-                id = 1,
-                name = "Rick Sanchez",
-                status = "Alive",
-                species = "Human",
-                gender = "Male",
-                image = "https://example.com/rick.png"
-            )
-        )
+            val initialCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
+                )
 
-        fakeRepository.charactersPageResult = Result.success(
-            CharacterPageResult(
-                characters = initialCharacters,
-                nextPage = null,
-                isLastPage = true
-            )
-        )
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = initialCharacters,
+                        nextPage = null,
+                        isLastPage = true,
+                    ),
+                )
 
-        val viewModel = CharacterListViewModel(fakeRepository)
-        advanceUntilIdle()
+            val viewModel = CharacterListViewModel(fakeRepository)
+            advanceUntilIdle()
 
-        viewModel.loadMoreCharacters()
-        advanceUntilIdle()
+            viewModel.loadMoreCharacters()
+            advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value
+            val uiState = viewModel.uiState.value
 
-        assertEquals(initialCharacters, uiState.characters)
-        assertFalse(uiState.isInitialLoading)
-        assertFalse(uiState.isLoadingMore)
-        assertFalse(uiState.isRefreshing)
-        assertNull(uiState.errorMessage)
-        assertTrue(uiState.endReached)
-        assertEquals(1, fakeRepository.getCharactersPageCallCount)
-    }
+            assertEquals(initialCharacters, uiState.characters)
+            assertFalse(uiState.isInitialLoading)
+            assertFalse(uiState.isLoadingMore)
+            assertFalse(uiState.isRefreshing)
+            assertNull(uiState.errorMessage)
+            assertTrue(uiState.endReached)
+            assertEquals(1, fakeRepository.getCharactersPageCallCount)
+        }
 
     @Test
-    fun loadInitialCharacters_whenCalledAgainAfterError_updatesUiStateWithCharacters() = runTest {
-        val fakeRepository = FakeCharacterRepository()
+    fun loadInitialCharacters_whenCalledAgainAfterError_updatesUiStateWithCharacters() =
+        runTest {
+            val fakeRepository = FakeCharacterRepository()
 
-        fakeRepository.charactersPageResult =
-            Result.failure(RuntimeException("Failed to load characters."))
+            fakeRepository.charactersPageResult =
+                Result.failure(RuntimeException("Failed to load characters."))
 
-        val viewModel = CharacterListViewModel(fakeRepository)
-        advanceUntilIdle()
+            val viewModel = CharacterListViewModel(fakeRepository)
+            advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.characters.isEmpty())
-        assertEquals("Failed to load characters.", viewModel.uiState.value.errorMessage)
+            assertTrue(viewModel.uiState.value.characters.isEmpty())
+            assertEquals("Failed to load characters.", viewModel.uiState.value.errorMessage)
 
-        val expectedCharacters = listOf(
-            CharacterModel(
-                id = 1,
-                name = "Rick Sanchez",
-                status = "Alive",
-                species = "Human",
-                gender = "Male",
-                image = "https://example.com/rick.png"
-            ),
-            CharacterModel(
-                id = 2,
-                name = "Morty Smith",
-                status = "Alive",
-                species = "Human",
-                gender = "Male",
-                image = "https://example.com/morty.png"
-            )
-        )
+            val expectedCharacters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
+                    CharacterModel(
+                        id = 2,
+                        name = "Morty Smith",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/morty.png",
+                    ),
+                )
 
-        fakeRepository.charactersPageResult = Result.success(
-            CharacterPageResult(
-                characters = expectedCharacters,
-                nextPage = 2,
-                isLastPage = false
-            )
-        )
+            fakeRepository.charactersPageResult =
+                Result.success(
+                    CharacterPageResult(
+                        characters = expectedCharacters,
+                        nextPage = 2,
+                        isLastPage = false,
+                    ),
+                )
 
-        viewModel.loadInitialCharacters()
-        advanceUntilIdle()
+            viewModel.loadInitialCharacters()
+            advanceUntilIdle()
 
-        val uiState = viewModel.uiState.value
+            val uiState = viewModel.uiState.value
 
-        assertEquals(expectedCharacters, uiState.characters)
-        assertFalse(uiState.isInitialLoading)
-        assertFalse(uiState.isLoadingMore)
-        assertFalse(uiState.isRefreshing)
-        assertNull(uiState.errorMessage)
-        assertFalse(uiState.endReached)
-        assertEquals(2, fakeRepository.getCharactersPageCallCount)
-    }
+            assertEquals(expectedCharacters, uiState.characters)
+            assertFalse(uiState.isInitialLoading)
+            assertFalse(uiState.isLoadingMore)
+            assertFalse(uiState.isRefreshing)
+            assertNull(uiState.errorMessage)
+            assertFalse(uiState.endReached)
+            assertEquals(2, fakeRepository.getCharactersPageCallCount)
+        }
 
     @Test
     fun loadInitialCharacters_whenRequestIsAlreadyInProgress_doesNotStartAnotherRequest() =
@@ -324,7 +339,6 @@ class CharacterListViewModelTest {
 }
 
 private class BlockingCharacterRepository : CharacterRepository {
-
     var getCharactersPageCallCount = 0
 
     private val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -335,21 +349,21 @@ private class BlockingCharacterRepository : CharacterRepository {
         gate.await()
 
         return CharacterPageResult(
-            characters = listOf(
-                CharacterModel(
-                    id = 1,
-                    name = "Rick Sanchez",
-                    status = "Alive",
-                    species = "Human",
-                    gender = "Male",
-                    image = "https://example.com/rick.png"
-                )
-            ),
+            characters =
+                listOf(
+                    CharacterModel(
+                        id = 1,
+                        name = "Rick Sanchez",
+                        status = "Alive",
+                        species = "Human",
+                        gender = "Male",
+                        image = "https://example.com/rick.png",
+                    ),
+                ),
             nextPage = 2,
-            isLastPage = false
+            isLastPage = false,
         )
     }
-
 
     override suspend fun getCharacterById(id: Int): CharacterModel {
         throw UnsupportedOperationException("Not needed for this test")

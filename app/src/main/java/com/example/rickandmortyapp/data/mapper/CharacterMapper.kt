@@ -11,7 +11,7 @@ fun CharacterDto.toEntity(): CharacterEntity {
         status = status,
         species = species,
         gender = gender,
-        image = image
+        image = image,
     )
 }
 
@@ -22,6 +22,6 @@ fun CharacterEntity.toDomain(): CharacterModel {
         status = status,
         species = species,
         gender = gender,
-        image = image
+        image = image,
     )
 }
