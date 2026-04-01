@@ -1,6 +1,7 @@
 package com.example.rickandmortyapp.ui.screens.character_detail
 
 import com.example.rickandmortyapp.domain.model.CharacterModel
+import com.example.rickandmortyapp.domain.usecase.character.GetCharacterDetailUseCase
 import com.example.rickandmortyapp.fakes.FakeCharacterRepository
 import com.example.rickandmortyapp.rules.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,6 +22,7 @@ class CharacterDetailViewModelTest {
     fun loadCharacter_whenRepositoryReturnsSuccess_updatesUiStateWithCharacter() =
         runTest {
             val fakeRepository = FakeCharacterRepository()
+            val useCase = GetCharacterDetailUseCase(fakeRepository)
 
             val expectedCharacter =
                 CharacterModel(
@@ -32,14 +34,11 @@ class CharacterDetailViewModelTest {
                     image = "https://example.com/rick.png",
                 )
 
-            fakeRepository.characterByIdResult = Result.success(expectedCharacter)
+            fakeRepository.refreshCharacterResult = Result.success(Unit)
 
-            val viewModel =
-                CharacterDetailViewModel(
-                    repository = fakeRepository,
-                    characterId = 1,
-                )
+            val viewModel = CharacterDetailViewModel(useCase, 1)
 
+            fakeRepository.observeCharacterByIdFlow.emit(expectedCharacter)
             advanceUntilIdle()
 
             val uiState = viewModel.uiState.value
@@ -47,23 +46,18 @@ class CharacterDetailViewModelTest {
             assertFalse(uiState.isLoading)
             assertEquals(expectedCharacter, uiState.character)
             assertNull(uiState.errorMessage)
-            assertEquals(1, fakeRepository.getCharacterByIdCallCount)
         }
 
     @Test
     fun loadCharacter_whenRepositoryReturnsError_updatesUiStateWithError() =
         runTest {
             val fakeRepository = FakeCharacterRepository()
+            val useCase = GetCharacterDetailUseCase(fakeRepository)
 
-            fakeRepository.characterByIdResult =
+            fakeRepository.refreshCharacterResult =
                 Result.failure(RuntimeException("Network error"))
 
-            val viewModel =
-                CharacterDetailViewModel(
-                    repository = fakeRepository,
-                    characterId = 1,
-                )
-
+            val viewModel = CharacterDetailViewModel(useCase, 1)
             advanceUntilIdle()
 
             val uiState = viewModel.uiState.value
@@ -71,28 +65,23 @@ class CharacterDetailViewModelTest {
             assertFalse(uiState.isLoading)
             assertNull(uiState.character)
             assertEquals("Network error", uiState.errorMessage)
-            assertEquals(1, fakeRepository.getCharacterByIdCallCount)
         }
 
     @Test
     fun loadCharacter_whenCalledAgainAfterError_updatesUiStateWithSuccess() =
         runTest {
             val fakeRepository = FakeCharacterRepository()
+            val useCase = GetCharacterDetailUseCase(fakeRepository)
 
-            fakeRepository.characterByIdResult =
+            fakeRepository.refreshCharacterResult =
                 Result.failure(RuntimeException("Network error"))
 
-            val viewModel =
-                CharacterDetailViewModel(
-                    repository = fakeRepository,
-                    characterId = 1,
-                )
-
+            val viewModel = CharacterDetailViewModel(useCase, 1)
             advanceUntilIdle()
 
             assertEquals("Network error", viewModel.uiState.value.errorMessage)
             assertNull(viewModel.uiState.value.character)
-
+            
             val expectedCharacter =
                 CharacterModel(
                     id = 1,
@@ -103,9 +92,10 @@ class CharacterDetailViewModelTest {
                     image = "https://example.com/rick.png",
                 )
 
-            fakeRepository.characterByIdResult = Result.success(expectedCharacter)
+            fakeRepository.refreshCharacterResult = Result.success(Unit)
 
-            viewModel.loadCharacter()
+            viewModel.loadCharacterDetail()
+            fakeRepository.observeCharacterByIdFlow.emit(expectedCharacter)
             advanceUntilIdle()
 
             val uiState = viewModel.uiState.value
@@ -113,6 +103,5 @@ class CharacterDetailViewModelTest {
             assertFalse(uiState.isLoading)
             assertEquals(expectedCharacter, uiState.character)
             assertNull(uiState.errorMessage)
-            assertEquals(2, fakeRepository.getCharacterByIdCallCount)
         }
 }
